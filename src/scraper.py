@@ -29,10 +29,13 @@ import requests
 import time
 
 
+HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+
 def fetch_hackathons(page: int = 1) -> list[dict]:
     url = f"https://devpost.com/api/hackathons?status[]=open&page={page}"
 
-    response = requests.get(url)
+    response = requests.get(url, headers=HEADERS)
     if response.status_code != 200:
         raise Exception(f"Devpost API returned {response.status_code}")
     
@@ -49,7 +52,7 @@ def fetch_all_open_hackathons(max_pages: int = 10) -> list[dict]:
       if not hackathon:
           break
       all_hackathons.extend(hackathon)
-      time.sleep(1)
+      time.sleep(3)
         
     return all_hackathons
 
