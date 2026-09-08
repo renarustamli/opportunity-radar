@@ -1,2 +1,3 @@
 requests
 pytest
+sentence-transformers

@@ -2,7 +2,7 @@ import sys
 
 from src.scraper import fetch_all_open_hackathons, normalize_opportunity
 from src.storage import init_db, save_opportunity, get_all_opportunities
-from src.matcher import rank_opportunities, score_opportunity
+from src.matcher import Matcher
 from src.user_profile import PROFILE
 
 def refresh_data():
@@ -13,12 +13,14 @@ def refresh_data():
     return len(hackathons)
 
 def report():
+    matcher = Matcher(PROFILE["description"])
+
     opportunities = get_all_opportunities()
-    ranked = rank_opportunities(opportunities, PROFILE)
+    ranked = matcher.rank(opportunities)
 
     for opp in ranked:
-        score = score_opportunity(opp, PROFILE)
-        print(f"[{score}] {opp['title']}")
+        score = matcher.score(opp)
+        print(f"[{score:.3f}] {opp['title']}")
         print(f"    {opp['deadline_text']} | {opp['prize_amount']} | {opp['organization']}")
         print(f"    {opp['url']}")
         print()

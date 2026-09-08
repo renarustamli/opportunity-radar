@@ -27,6 +27,7 @@ Reference: sample response shape (fetched 2026-07-14, may drift over time)
 
 import requests
 import time
+from datetime import datetime
 
 
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -71,6 +72,10 @@ def normalize_opportunity(raw: dict) -> dict:
         "themes": [t["name"] for t in raw["themes"]],
     }
 
+def parse_deadline(deadline_text):
+      parts = deadline_text.split(" - ")
+      end_text = parts[-1]
+      return datetime.strptime(end_text, "%b %d, %Y").strftime("%Y-%m-%d")
 
 if __name__ == "__main__":
     hackathons = fetch_all_open_hackathons()
