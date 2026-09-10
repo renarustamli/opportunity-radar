@@ -1,7 +1,7 @@
 import sys
 
 from src.scraper import fetch_all_open_hackathons, normalize_opportunity
-from src.storage import init_db, save_opportunity, get_all_opportunities
+from src.storage import init_db, save_opportunity, get_active_opportunities
 from src.matcher import Matcher
 from src.user_profile import PROFILE
 
@@ -15,7 +15,7 @@ def refresh_data():
 def report():
     matcher = Matcher(PROFILE["description"])
 
-    opportunities = get_all_opportunities()
+    opportunities = get_active_opportunities()
     ranked = matcher.rank(opportunities)
 
     for opp in ranked:

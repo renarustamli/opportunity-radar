@@ -67,15 +67,25 @@ def normalize_opportunity(raw: dict) -> dict:
         "url": raw["url"],
         "location": raw["displayed_location"]["location"],
         "deadline_text": raw["submission_period_dates"],
+        "deadline_date": parse_deadline(raw["submission_period_dates"]),
         "prize_amount": raw["prize_amount"].replace("<span data-currency-value>", "").replace("</span>", ""),
         "organization": raw["organization_name"],
         "themes": [t["name"] for t in raw["themes"]],
     }
 
 def parse_deadline(deadline_text):
-      parts = deadline_text.split(" - ")
-      end_text = parts[-1]
-      return datetime.strptime(end_text, "%b %d, %Y").strftime("%Y-%m-%d")
+    parts = deadline_text.split(" - ")
+    end_text = parts[-1]
+
+    try:
+        return datetime.strptime(end_text, "%b %d, %Y").strftime("%Y-%m-%d")
+    except ValueError:
+        try:
+            month = parts[0].split()[0]
+            return datetime.strptime(f"{month} {end_text}", "%b %d, %Y").strftime("%Y-%m-%d")
+        except ValueError:
+            return None
+
 
 if __name__ == "__main__":
     hackathons = fetch_all_open_hackathons()
