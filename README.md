@@ -4,14 +4,16 @@ Finds and tracks hackathons, ranks them against my interests, and emails me a di
 
 ## What it does
 
-Runs daily on GitHub Actions and:
-
 1. Scrapes hackathon listings from two sources
 2. Stores them in SQLite, deduplicating against everything seen before
 3. Drops anything whose deadline has passed
 4. Ranks what remains by semantic similarity to a written profile
 5. Sends the top matches to an LLM for relevance scores and one-line reasoning
 6. Emails a digest containing only opportunities not sent before
+
+Steps 1-4 run daily on GitHub Actions. The digest is currently sent by running
+`--notify` locally; adding `RESEND_API_KEY` and `DIGEST_TO` as repository
+secrets moves it into the scheduled run.
 
 Steps 4 and 5 are a retrieval-then-rerank pipeline: embeddings are cheap and shallow, so they narrow the field; the LLM is expensive and precise, so it only judges the shortlist.
 

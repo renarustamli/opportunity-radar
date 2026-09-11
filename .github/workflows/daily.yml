@@ -42,12 +42,15 @@ jobs:
           gh run download --name database --dir data \
             || echo "No previous database found, starting fresh"
 
-      - name: Fetch and send the digest
+      # Add --notify once RESEND_API_KEY and DIGEST_TO are set as repository
+      # secrets. Without them the digest step raises, so the scheduled run
+      # fetches and persists only.
+      - name: Fetch and rank
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           DIGEST_TO: ${{ secrets.DIGEST_TO }}
-        run: python3 main.py --refresh --notify
+        run: python3 main.py --refresh
 
       - name: Save the database for the next run
         uses: actions/upload-artifact@v4
