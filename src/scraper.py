@@ -83,7 +83,7 @@ def parse_deadline(deadline_text):
         try:
             month = parts[0].split()[0]
             return datetime.strptime(f"{month} {end_text}", "%b %d, %Y").strftime("%Y-%m-%d")
-        except ValueError:
+        except (ValueError, IndexError):
             return None
 
 
