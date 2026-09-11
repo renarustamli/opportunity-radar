@@ -1,6 +1,7 @@
 import sys
 
 from src.scraper import fetch_all_open_hackathons, normalize_opportunity
+from src.uk_scraper import fetch_uk_opportunities
 from src.storage import init_db, save_opportunity, get_active_opportunities
 from src.matcher import Matcher
 from src.reranker import rerank
@@ -9,11 +10,31 @@ from src.user_profile import PROFILE
 SHORTLIST_SIZE = 20
 
 def refresh_data():
+    """Fetch from every source. One source failing must not lose the others."""
     init_db()
-    hackathons = fetch_all_open_hackathons()
-    for raw in hackathons:
-        save_opportunity(normalize_opportunity(raw))
-    return len(hackathons)
+    saved = 0
+
+    for name, fetch in (("devpost", fetch_devpost), ("hackathons_uk", fetch_uk)):
+        try:
+            opportunities = fetch()
+        except Exception as error:
+            print(f"  {name} failed: {error}")
+            continue
+
+        for opportunity in opportunities:
+            save_opportunity(opportunity)
+        saved += len(opportunities)
+        print(f"  {name}: {len(opportunities)} fetched")
+
+    return saved
+
+
+def fetch_devpost():
+    return [normalize_opportunity(raw) for raw in fetch_all_open_hackathons()]
+
+
+def fetch_uk():
+    return fetch_uk_opportunities()
 
 def report():
     matcher = Matcher(PROFILE["description"])
