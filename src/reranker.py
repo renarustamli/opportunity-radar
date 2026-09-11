@@ -1,7 +1,18 @@
+import re
+import time
+
 from pydantic import BaseModel, Field
 from google import genai
 
+# Private import: the interaction errors inherit from GenAiError, which the SDK
+# does not re-export publicly. google.genai.errors.APIError does NOT cover them.
+# If a future SDK version moves this, the import fails loudly at startup, which
+# is preferable to silently catching nothing.
+from google.genai._gaos.errors.genaierror import GenAiError
+
 MODEL = "gemini-3.8-flash"
+MAX_ATTEMPTS = 4
+FALLBACK_DELAYS = [5, 20, 60]
 
 
 class Ranking(BaseModel):
@@ -12,6 +23,40 @@ class Ranking(BaseModel):
 
 class RankingList(BaseModel):
     rankings: list[Ranking]
+
+
+def retry_delay(error, attempt):
+    """Seconds to wait before retrying. Prefers the API's own hint when it gives one."""
+    match = re.search(r"retry in ([\d.]+)s", str(error))
+    if match:
+        return float(match.group(1)) + 1
+
+    return FALLBACK_DELAYS[min(attempt, len(FALLBACK_DELAYS) - 1)]
+
+
+def call_model(prompt):
+    """Call the model, retrying on transient failures and rate limits."""
+    client = genai.Client()
+
+    for attempt in range(MAX_ATTEMPTS):
+        try:
+            return client.interactions.create(
+                model=MODEL,
+                input=prompt,
+                response_format={
+                    "type": "text",
+                    "mime_type": "application/json",
+                    "schema": RankingList.model_json_schema(),
+                },
+            )
+        except GenAiError as error:
+            if attempt == MAX_ATTEMPTS - 1:
+                raise
+
+            delay = retry_delay(error, attempt)
+            print(f"  model call failed ({type(error).__name__}), retrying in {delay:.0f}s")
+            time.sleep(delay)
+
 
 def rerank(opportunities, profile_text):
     opp_list = []
@@ -37,15 +82,6 @@ Rules:
 - Judge on how well the topic matches the profile, not on prize size or prestige.
 - Give one short sentence of reasoning for each score."""
 
-    client = genai.Client()
-    interaction = client.interactions.create(
-        model=MODEL,
-        input=prompt,
-        response_format={
-            "type": "text",
-            "mime_type": "application/json",
-            "schema": RankingList.model_json_schema(),
-        },
-    )
+    interaction = call_model(prompt)
 
     return RankingList.model_validate_json(interaction.output_text).rankings
