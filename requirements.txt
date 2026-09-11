@@ -1,3 +1,5 @@
 requests
 pytest
 sentence-transformers
+google-genai
+pydantic
