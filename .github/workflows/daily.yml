@@ -1,0 +1,54 @@
+name: Daily opportunity scan
+
+on:
+  schedule:
+    # 08:00 UTC every day. GitHub queues scheduled jobs, so the actual start
+    # time drifts by a few minutes under load.
+    - cron: "0 8 * * *"
+  # Lets you trigger a run by hand from the Actions tab, which is how you test
+  # a scheduled workflow without waiting for the schedule.
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # The embedding model is ~90MB and would otherwise download on every run.
+      - name: Cache the embedding model
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: huggingface-all-MiniLM-L6-v2
+
+      # The runner is destroyed after each job, so the database has to come
+      # from the previous run's artifact. Missing artifact is fine: the first
+      # run has no predecessor, and init_db() creates the table from scratch.
+      - name: Restore the database from the last run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p data
+          gh run download --name database --dir data \
+            || echo "No previous database found, starting fresh"
+
+      - name: Fetch and report
+        run: python3 main.py --refresh
+
+      - name: Save the database for the next run
+        uses: actions/upload-artifact@v4
+        with:
+          name: database
+          path: data/opportunities.db
+          retention-days: 7
+          overwrite: true
