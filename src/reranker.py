@@ -58,7 +58,8 @@ def call_model(prompt):
             time.sleep(delay)
 
 
-def rerank(opportunities, profile_text):
+def rerank_prompt(opportunities, profile_text):
+    """Build the scoring prompt. Kept separate from the API call so it can be tested."""
     opp_list = []
     for opportunity in opportunities:
         themes = ", ".join(opportunity["themes"])
@@ -66,7 +67,7 @@ def rerank(opportunities, profile_text):
 
     candidates = "\n".join(opp_list)
 
-    prompt = f"""You are helping a student decide which hackathons to enter.
+    return f"""You are helping a student decide which hackathons to enter.
 Score each candidate below on how well it matches the profile.
 
 Profile:
@@ -82,6 +83,8 @@ Rules:
 - Judge on how well the topic matches the profile, not on prize size or prestige.
 - Give one short sentence of reasoning for each score."""
 
-    interaction = call_model(prompt)
+
+def rerank(opportunities, profile_text):
+    interaction = call_model(rerank_prompt(opportunities, profile_text))
 
     return RankingList.model_validate_json(interaction.output_text).rankings
