@@ -4,3 +4,4 @@ pytest
 sentence-transformers
 google-genai
 pydantic
+resend

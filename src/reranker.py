@@ -16,7 +16,10 @@ FALLBACK_DELAYS = [5, 20, 60]
 
 
 class Ranking(BaseModel):
-    source_id: int = Field(description="The source_id of the hackathon being scored")
+    # The database row id, not source_id: source ids differ per source (Devpost
+    # uses integers, the UK site uses URLs) and a long URL is easy for a model
+    # to echo back imperfectly. A short integer is unambiguous.
+    id: int = Field(description="The id of the hackathon being scored")
     score: int = Field(description="Relevance to the profile, 0 (irrelevant) to 100 (ideal match)")
     reasoning: str = Field(description="One sentence explaining the score")
 
@@ -63,7 +66,7 @@ def rerank_prompt(opportunities, profile_text):
     opp_list = []
     for opportunity in opportunities:
         themes = ", ".join(opportunity["themes"])
-        opp_list.append(f"[{opportunity['source_id']}] {opportunity['title']} - {themes}")
+        opp_list.append(f"[{opportunity['id']}] {opportunity['title']} - {themes}")
 
     candidates = "\n".join(opp_list)
 
@@ -77,7 +80,7 @@ Candidates:
 {candidates}
 
 Rules:
-- Score every candidate exactly once, identified by its source_id.
+- Score every candidate exactly once, identified by the id in square brackets.
 - Use the full 0-100 range. Reserve 80 and above for genuinely strong matches, and
   score clearly unrelated hackathons below 30. Do not cluster scores together.
 - Judge on how well the topic matches the profile, not on prize size or prestige.

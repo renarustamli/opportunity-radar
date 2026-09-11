@@ -24,11 +24,13 @@ OVERLOAD_ERROR = (
 
 SAMPLE_OPPORTUNITIES = [
     {
+        "id": 7,
         "source_id": 29969,
         "title": "RevenueCat Shipaton 2026",
         "themes": ["Design", "Gaming", "Mobile"],
     },
     {
+        "id": 12,
         "source_id": 30317,
         "title": "Agents for Humans Hackathon",
         "themes": ["Machine Learning/AI", "Open Ended"],
@@ -57,11 +59,11 @@ def test_retry_delay_clamps_past_the_end_of_the_fallback_list():
     assert retry_delay(OVERLOAD_ERROR, 99) == FALLBACK_DELAYS[-1]
 
 
-def test_rerank_prompt_includes_every_candidate_with_its_source_id():
+def test_rerank_prompt_includes_every_candidate_with_its_id():
     prompt = rerank_prompt(SAMPLE_OPPORTUNITIES, "AI agent hackathons")
 
     for opportunity in SAMPLE_OPPORTUNITIES:
-        assert str(opportunity["source_id"]) in prompt
+        assert f"[{opportunity['id']}]" in prompt
         assert opportunity["title"] in prompt
 
 
